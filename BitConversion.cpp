@@ -2,22 +2,119 @@
 #include <string>
 using namespace std;
 
-//                                                  USEFUL TOOLS
+//                                                  FORMATTING
 
 // pads a string with leading zeros until it matches the specified length
-string zeropad(string instring, int length) {
+int zeropad(string* instring, int length) {
     string outstr = "";
-    for (int i = instring.length(); i < length; i++) {
+    for (int i = instring->length(); i < length; i++) {
         outstr += "0";
     }
-    outstr += instring;
-    return outstr;
+    outstr += *instring;
+    *instring = outstr;
+    return 0;
 }
 
-//                                                  HEX CONVERSIONS
+// if a hex string is valid it returns the string, otherwise it returns "***"
+string formathex(string hexin) {
+    string outstring = "";
+    for (int i = 0; i < hexin.length(); i++) {
+        if (int(hexin[i]) >= 48 && int(hexin[i]) <= 57) outstring += hexin[i];
+        else if (int(hexin[i]) >= 65 && int(hexin[i]) <= 70) outstring += hexin[i];
+        else if (int(hexin[i]) >= 97 && int(hexin[i]) <= 102) outstring += char(int(hexin[i]) - 32);
+        else return "***";
+    }
+    return outstring;
+}
 
-// hex to dec
+// if a binary string is valid it returns the string, otherwise it returns "***"
+string formatbin(string binin) {
+    for (int i = 0; i < binin.length(); i++) {
+        if (binin[i] != '0' && binin[i] != '1') return "***";
+    }
+    return binin;
+}
+
+//                                                  CHARACTER CONVERSIONS
+
 const char hexchars[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+
+// converts an integer between 0 and 16 to it's corresponding hexadecimal character, returns '#' on failure
+char decchartohex(int decchar) {
+    if (decchar <= 16 && decchar >= 0) return hexchars[decchar];
+    cerr << "decchartohex received invalid input" << endl;
+    return '#';
+}
+
+// finds the corresponding integer value for a hexadecimal character
+int hexchartodec(char hexchar) {
+    for (int i = 0; i < 16; i++) {
+        if (hexchar == hexchars[i]) return i;
+    }
+    return -1;
+}
+
+//                                                  STRING CONVERSIONS
+
+// returns a hexadecimal string based on a provided integer value and length
+string dectohex(int innum, int hexlen = 0) {
+    int mult = 1;
+    int chgnum = innum;
+    int minlen = 0;
+    string outstring = "";
+
+    if (chgnum < 0) chgnum *= -1;
+
+    // finds the minimum hex length and max divisor
+    while (mult < chgnum) {
+        mult *= 16;
+        minlen++;
+    }
+    mult /= 16;
+    minlen--;
+
+    // pads string
+    zeropad(&outstring, hexlen - minlen - 1);
+
+    // converts decimal to hex
+    while (mult > 0) {
+        outstring += hexchars[chgnum / mult];
+        chgnum -= int(chgnum / mult) * mult;
+        mult /= 16;
+    }
+    return outstring;
+}
+
+// returns a binary string based on a provided integer value and length
+string dectobin(int innum, int binlen = 0) {
+    int mult = 1;
+    int chgnum = innum;
+    int minlen = 0;
+    string outstring = "";
+
+    if (chgnum < 0) chgnum *= -1;
+
+    // finds the minimum binary length and max divisor
+    while (mult < chgnum) {
+        mult *= 2;
+        minlen++;
+    }
+    mult /= 2;
+    minlen--;
+
+    // pads string
+    zeropad(&outstring, binlen - minlen - 1);
+
+    // converts decimal to binary
+    while (mult > 0) {
+        outstring += char((chgnum / mult) + 48);
+        chgnum -= int(chgnum / mult) * mult;
+        mult /= 2;
+    }
+    return outstring;
+}
+
+// returns an integer value for a provided hexadecimal string
 int hextodec(string hexstring) {
     int outnum = 0;
     int multiplier = 1;
@@ -34,77 +131,64 @@ int hextodec(string hexstring) {
     cout << outnum << endl;
     return outnum;
 }
-int hexchartodec(char hexchar) {
-    for (int i = 0; i < 16; i++) {
-        if (hexchar == hexchars[i]) return i;
-    }
-    return -1;
-}
 
-// dec to hex
-string dectohex(int innum, int hexlen) {
-    int mult = 1;
-    int chgnum = innum;
-
-    // finds the max value
-    for (int i = 0; i < (hexlen - 1); i++) {
-        mult = mult * 16;
-    }
-    cout << "mult: " << mult;
-
-    // creates the outstring
-    string outstring = "";
-    while (mult > 0) {
-        cout << chgnum << ", " << mult << ", " << chgnum / mult << endl;
-        outstring += hexchars[chgnum / mult];
-        chgnum -= int(chgnum / mult) * mult;
-        mult /= 16;
-    }
-    return outstring;
-}
-char decchartohex(int decchar) {
-    if (decchar <= 16 && decchar >= 0) return hexchars[decchar];
-    return '#';
-}
-
-const string hexbin[16] = { "0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111", "1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111" };
-
-// bin to hex WIP
-string bintohex(string binstring) {
-    string hexstring = "";
-    
-    // pad with zeros
-    if (binstring.size() % 4) {
-        zeropad(binstring, binstring.size() + (4 - binstring.size() % 4));
-    }
-
-    // search
-    for (int i = binstring.size(); i >= 0; i -= 4) {
-        for (int hex = 0; hex < 16; hex++) {
-            if (hexbin[hex].at(0) == binstring.at(i) && hexbin[hex].at(1) == binstring.at(i + 1) && hexbin[hex].at(2) == binstring.at(i + 2) && hexbin[hex].at(3) == binstring.at(i + 3)) {
-                hexstring += hexchars[hex];
+// returns an integer value for a provided binary string
+int bintodec(string binstring) {
+    int outnum = 0;
+    int multiplier = 1;
+    for (int letter = binstring.length() - 1; letter >= 0; letter--) {
+        for (int bin = 0; bin <= 2; bin++) {
+            cout << binstring.at(letter) << ", " << char(bin) << ", " << multiplier << ", " << outnum << endl;
+            if (binstring.at(letter) == char(bin)) {
+                outnum += (bin * multiplier);
+                multiplier *= 2;
+                bin = 2;
             }
         }
     }
-
-    return hexstring;
+    cout << outnum << endl;
+    return outnum;
 }
 
-// hex to bin
-string hextobin(string hexstring) {
-    string outstring;
-    for (int letter = 0; letter < hexstring.length(); letter++) {
-        for (int hex = 0; hex < 16; hex++) {
-            if (hexchars[hex] == hexstring.at(letter)) {
-                outstring += hexbin[hex];
-                hex = 16;
-            }
-        }
+//                                                  ARITHMETIC
+
+// subtracts hexB from hexA and returns the output
+string hexsub(string hexA, string hexB) {
+    string revouthex = "";
+    int hexApos = 0;
+    int hexBpos = 0;
+    int newpos = 0;
+    int borrow = 0;
+
+    // completes any neccessary padding for hexB
+    string hexBmod = "";
+    for (int i = hexB.size(); i < hexA.size(); i++) {
+        hexBmod += "0";
     }
-    return outstring;
-}
+    hexBmod += hexB;
 
-//                                                  HEX MATH
+    // subtraction operation
+    for (int i = hexA.size() - 1; i >= 0; i--) {
+        hexApos = hexchartodec(hexA.at(i));
+        hexBpos = hexchartodec(hexBmod.at(i));
+
+        newpos = hexApos - hexBpos - borrow;
+        borrow = 0;
+        if (newpos < 0) {
+            borrow += 1;
+            newpos += 16;
+        }
+        revouthex += decchartohex(newpos);
+    }
+
+    // reverses string for printing
+    string outhex = "";
+    for (int i = revouthex.size() - 1; i >= 0; i--) {
+        outhex += revouthex.at(i);
+    }
+
+    return outhex;
+}
 
 string hexadd(string hexA, string hexB) {
     string revouthex = "";
@@ -138,99 +222,110 @@ string hexadd(string hexA, string hexB) {
     return outhex;
 }
 
-string hexsub(string hexA, string hexB) {
-    string revouthex = "";
-    int hexApos = 0;
-    int hexBpos = 0;
-    int newpos = 0;
-    int borrow = 0;
+// binary Class
+class binary {
+private:
+    int sign = 0;
+    int binlen = 0;
+    int hexlen = 0;
+    int decval = 0;
 
-    // completes any neccessary padding for hexB
-    string hexBmod = "";
-    for (int i = hexB.size(); i < hexA.size(); i++) {
-        hexBmod += "0";
-    }
-    hexBmod += hexB;
-
-    // subtraction operation
-    for (int i = hexA.size() - 1; i >= 0; i--) {
-        hexApos = hexchartodec(hexA.at(i));
-        hexBpos = hexchartodec(hexBmod.at(i));
-        
-        newpos = hexApos - hexBpos - borrow;
-        borrow = 0;
-        if (newpos < 0) {
-            borrow += 1;
-            newpos += 16;
+public:
+    // sets the hex string based on a decimal value
+    int setbydec(int decimal) {
+        // verifies innum and sets decval
+        if (decimal < 0) {
+            sign = 1;
         }
-        revouthex += decchartohex(newpos);
+
+        decval = decimal;
+        return 0;
     }
 
-    // reverses string for printing
-    string outhex = "";
-    for (int i = revouthex.size() - 1; i >= 0; i--) {
-        outhex += revouthex.at(i);
+    // sets the decimal value based on a hexadecimal string
+    int setbyhex(string hexin) {
+        string outstring = formathex(hexin);
+        if (outstring == "***") {
+            cerr << "setbyhex function received invalid hexstring" << endl;
+            return 1;
+        }
+
+        decval = hextodec(outstring);
+        return 0;
     }
 
-    return outhex;
-}
+    // sets the decimal value based on a binary string
+    int setbybin(string binin) {
+        string outstring = formatbin(binin);
+        if (outstring == "***") {
+            cerr << "setbybin function received invalid binstring" << endl;
+            return 1;
+        }
 
-//                                                  HEX CHECKER
+        decval = bintodec(outstring);
+        return 0;
+    }
 
-// checks to see if a string contains only valid hex characters and additional specified characters
-bool ishex(string inhex, string additchars = "") {
-    int match = 0;
-    
-    // checks each character of inhex
-    for (int i = 0; i < inhex.size() - 1; i++) {
-        
-        // checks for valid hex chars
-        for (int hex = 0; hex < 16; hex++) {
-            if (inhex.at(i) == hexchars[hex]) {
-                match += 1;
-                break;
+    int sethexlen(int new_hexlen) {
+        if (new_hexlen < 0) {
+            cerr << "invalid hex length value" << endl;
+            return 1;
+        }
+        hexlen = new_hexlen;
+        return 0;
+    }
+
+    int setbinlen(int new_binlen) {
+        if (new_binlen < 0) {
+            cerr << "invalid bin length value" << endl;
+            return 1;
+        }
+        binlen = new_binlen;
+        return 0;
+    }
+
+    int getdec() {
+        return decval;
+    }
+
+    string gethex() { 
+        // returns an unsigned hexadecimal string
+        if (sign == 0) {
+            return dectohex(decval, hexlen);
+        }
+
+        // returns a signed hexadecimal string
+        else if (hexlen >= 1 && sign == 1) {
+            // gets the unsigned hex string
+            string unsignedhex = dectohex(decval, hexlen);
+
+            // gets a string of all Fs up to the hexlen
+            string maxhex = "";
+            for (int i = 0; i < hexlen; i++) {
+                maxhex += "F";
             }
+
+            // subtracts the maxhex from the unsignedhex and returns the signedhex string
+            return hexsub(maxhex, unsignedhex);
         }
 
-        // checks for characters listed under additchars
-        for (int addit = 0; addit < additchars.size() - 1; addit++) {
-            if (inhex.at(i) == additchars.at(addit)) {
-                match += 1;
-                break;
-            }
+        else if (hexlen == 0 && sign == 1) {
+            cerr << "gethex cannot print a signed hexadecimal string without a specified length" << endl;
+            return "***";
         }
 
-        if (match > 0) return 1;
-        match = 0;
-    }
-    return 0;
-}
-
-//                                                  BINARY CONVERSIONS
-
-// dec to bin
-string dectobin(int innum, int bitlen) {
-    int mult = 1;
-    int chgnum = innum;
-
-    // finds the max value
-    for (int i = 0; i < bitlen; i++) {
-        mult = mult * 2;
-    }
-    cout << "mult: " << mult;
-
-    // creates the outstring
-    string outstring = "";
-    while (mult > 0) {
-        cout << chgnum << ", " << mult << ", " << chgnum / mult << endl;
-        if (chgnum / mult == 1) {
-            outstring += '1';
-            chgnum -= mult;
-        }
         else {
-            outstring += '0';
+            cerr << "ERROR in gethex" << endl;
+            return "***";
         }
-        mult /= 2;
+
     }
-    return outstring;
-}
+
+    string getbin() { 
+        if (binlen == 0 && sign == 1) {
+            cerr << "getbin cannot print a signed binary string without a specified length" << endl;
+            return "***";
+        }
+        return dectobin(decval, binlen); 
+    }
+};
